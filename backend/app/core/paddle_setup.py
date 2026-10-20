@@ -1,4 +1,4 @@
-"""PaddleOCR-VL setup and lazy engine singleton."""
+"""PaddleOCR (PP-OCRv6) setup and lazy engine singleton."""
 
 from __future__ import annotations
 
@@ -26,12 +26,17 @@ def _device() -> str:
 
 
 def get_pipeline() -> Any:
-    """Return the shared PaddleOCRVL pipeline, initializing it on first use."""
+    """Return the shared PaddleOCR (PP-OCRv6) pipeline, initializing it on first use."""
     global _pipeline
     if _pipeline is None:
         with _lock:
             if _pipeline is None:
-                from paddleocr import PaddleOCRVL
+                from paddleocr import PaddleOCR
 
-                _pipeline = PaddleOCRVL(device=_device())
+                _pipeline = PaddleOCR(
+                    use_doc_orientation_classify=False,
+                    use_doc_unwarping=False,
+                    use_textline_orientation=False,
+                    engine="paddle",
+                )
     return _pipeline

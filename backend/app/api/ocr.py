@@ -17,12 +17,28 @@ router = APIRouter()
 
 
 def _result_fields(res) -> tuple[str, float]:
-    """Extract (text, confidence) from a PaddleOCR-VL result item."""
+    """Extract (text, confidence) from a PaddleOCR (PP-OCRv6) result item.
+
+    PaddleOCR.predict() returns list of dicts like:
+    { "rec_texts": [...], "rec_scores": [...], "rec_boxes": [...] }
+
+    For backwards compatibility, also accept old PaddleOCR-VL dict/object formats.
+    """
+    # PP-OCRv6 standard format
+    if isinstance(res, dict) and "rec_texts" in res:
+        rec_texts = res.get("rec_texts", [""])
+        rec_scores = res.get("rec_scores", [1.0])
+        text = rec_texts[0] if rec_texts else ""
+        conf = float(rec_scores[0]) if rec_scores else 1.0
+        return (text, conf)
+
+    # Backward compatibility: PaddleOCR-VL dict/object
     if isinstance(res, dict):
         return (
             str(res.get("text", "")),
             float(res.get("confidence", res.get("score", 1.0)) or 1.0),
         )
+
     text = getattr(res, "text", None)
     if text is None and hasattr(res, "preds"):
         text = res.preds
@@ -39,7 +55,7 @@ def process_ocr(
     file: UploadFile = File(...),
     template_id: str = ...,
 ):
-    """Process an uploaded document with a saved template using PaddleOCR-VL."""
+    """Process an uploaded document with a saved template using PaddleOCR (PP-OCRv6)."""
 
     template_path = TEMPLATES_DIR / f"{template_id}.json"
     if not template_path.exists():
